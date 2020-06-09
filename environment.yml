@@ -1,0 +1,14 @@
+
+channels:
+  - conda-forge
+dependencies:
+  - ipywidgets
+  - scipy
+  - numpy
+  - pycrypto
+  - pip
+  - matplotlib
+  - requests
+  - pip:
+    - https://github.com/AaronWatters/jp_doodle/zipball/master
+  
