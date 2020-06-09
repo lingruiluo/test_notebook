@@ -121,6 +121,9 @@ class Turtle:
         self.defer_later_executions(delay)
         self.position = (x2, y2)
         self.execute_when_ready(action)
+        
+    def backward(self, distance):
+        self.forward(-distance)
 
     def left(self, degrees):
         radians = degrees * math.pi / 180.0
@@ -133,6 +136,9 @@ class Turtle:
             self.icon.transition(points=points, seconds_duration=delay)
         self.defer_later_executions(delay)
         self.execute_when_ready(action)
+    
+    def right(self, degrees):
+        self.left(-degrees)
 
     def defer_later_executions(self, seconds):
         old = self.next_execution_time
