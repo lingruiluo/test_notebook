@@ -62,6 +62,7 @@ class Turtle:
     direction_units = "degrees"
     position = (0, 0)
     speed = "normal"
+    stamp_id = 0
 
     # stolen from turtle.py
     _shapes = {
@@ -93,6 +94,9 @@ class Turtle:
         )
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
         self.icon = frame.polygon(points=self.icon_points, color=self.color, name=True)
+#         self.stamp = 0
+        self.stamps = []
+        self.icon_current_points = self.icon_points
         self.next_execution_time = time.time()
         #print("initially executing at", self.next_execution_time)
 
@@ -118,6 +122,8 @@ class Turtle:
             )
             line.transition(x2=x2, y2=y2, seconds_duration=delay)
             self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
+            self.icon_current_points = points
+            self.stamp_id += 1
         self.defer_later_executions(delay)
         self.position = (x2, y2)
         self.execute_when_ready(action)
@@ -134,11 +140,64 @@ class Turtle:
         def action(*ignored):
             self.screen.fit()
             self.icon.transition(points=points, seconds_duration=delay)
+            self.icon_current_points = points
         self.defer_later_executions(delay)
         self.execute_when_ready(action)
     
     def right(self, degrees):
         self.left(-degrees)
+        
+    def stamp(self):
+        def action(*ignored):
+            frame = self.screen.frame_region(
+                minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
+                frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
+            )
+            frame.polygon(points=self.icon_current_points, color=self.color, name=self.stamp_id)
+            self.stamps.append(self.stamp_id)
+            print(self.stamp_id)
+        self.execute_when_ready(action)
+        return self.stamp_id
+    
+    def clearstamp(self, stampid = None):
+        def action(*ignored):
+            self.screen.forget_objects(names = [stampid])
+            print("removed the stamp ", stampid)
+            self.stamps.remove(stampid)
+        if stampid is None:
+            stampid = self.stamps[-1]
+            self.stamp_id -= 1
+            self.execute_when_ready(action)
+        elif stampid in self.stamps:
+            self.execute_when_ready(action)
+        else:
+            print("Error: no such stamp")
+            return "no such stamp"
+    
+    def clearstamps(self, n = None):
+        def action(*ignored):
+            if n is None:
+                self.screen.forget_objects(names = self.stamps)
+                print("removed all stamps")
+                self.stamp_id = 0
+            elif abs(n) > len(self.stamps):
+                print("There are only ",len(self.stamps), " stamps")
+                return "There are only "+str(len(self.stamps))+" stamps"
+            elif n > 0:
+                self.screen.forget_objects(names = self.stamps[:n])
+                print("removed stamps ", self.stamps[:n])
+                for i in self.stamps[:n]:
+                    self.stamps.remove(i)
+            elif n < 0:
+                self.screen.forget_objects(names = self.stamps[n:])
+                print("removed stamps ", self.stamps[n:])
+                self.stamp_id -= n
+                for i in self.stamps[n:]:
+                    self.stamps.remove(i)
+            else:
+                print("removed no stamp")
+        self.execute_when_ready(action) 
+            
 
     def defer_later_executions(self, seconds):
         old = self.next_execution_time
