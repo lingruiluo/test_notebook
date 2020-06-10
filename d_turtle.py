@@ -151,11 +151,11 @@ class Turtle:
         
     def stamp(self):
         def action(*ignored):
-            frame = self.screen.frame_region(
-                minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
-                frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
-            )
-            stamp = frame.polygon(points=self.icon_current_points, color=self.color, name=True)
+#             frame = self.screen.frame_region(
+#                 minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
+#                 frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
+#             )
+            stamp = self.frame.polygon(points=self.icon_current_points, color=self.color, name=True)
             if self.stamp_id not in self.stampsId:
                 self.stampsId.append(self.stamp_id)
             self.stampsItem[self.stamp_id] = stamp
@@ -192,7 +192,10 @@ class Turtle:
             print("removed stamps ", names)
         for i in names:
             self.clearstamp(stampid=i)
-              
+    
+    def color(self, color_name):
+        self.color = color_name
+        self.icon.change(color=color_name)
 
     def defer_later_executions(self, seconds):
         old = self.next_execution_time
