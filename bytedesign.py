@@ -146,6 +146,7 @@ class Designer(Turtle):
         self.centerpiece(s - (1.2 * scale), a, scale)
 
 def main():
+    "this bufferss too many messages"
     t = Designer()
     t.speed(0)
     t.hideturtle()
