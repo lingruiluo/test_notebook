@@ -49,6 +49,7 @@ class Shape:
         if kind == "polygon":
             in_turtle.icon_points = [[x, y] for [y, x] in self.data]
             in_turtle.forward(0)
+            in_turtle.stamp_id -= 1
         else:
             raise ValueError("unknown kind " + repr(kind))
 
@@ -95,7 +96,8 @@ class Turtle:
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
         self.icon = frame.polygon(points=self.icon_points, color=self.color, name=True)
 #         self.stamp = 0
-        self.stamps = []
+        self.stampsItem = dict()
+        self.stampsId = []
         self.icon_current_points = self.icon_points
         self.next_execution_time = time.time()
         #print("initially executing at", self.next_execution_time)
@@ -153,51 +155,44 @@ class Turtle:
                 minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
                 frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
             )
-            frame.polygon(points=self.icon_current_points, color=self.color, name=self.stamp_id)
-            self.stamps.append(self.stamp_id)
-            print(self.stamp_id)
+            stamp = frame.polygon(points=self.icon_current_points, color=self.color, name=True)
+            if self.stamp_id not in self.stampsId:
+                self.stampsId.append(self.stamp_id)
+            self.stampsItem[self.stamp_id] = stamp
         self.execute_when_ready(action)
         return self.stamp_id
     
     def clearstamp(self, stampid = None):
         def action(*ignored):
-            self.screen.forget_objects(names = [stampid])
-            print("removed the stamp ", stampid)
-            self.stamps.remove(stampid)
+            try:
+#                 self.stampsItem[stampid].visible(False)
+                self.stampsItem[stampid].forget()
+                print("removed the stamp ", stampid)
+                self.stampsItem.pop(stampid)
+                self.stampsId.remove(stampid)
+            except KeyError:
+                print("No such stamp")
+                raise
         if stampid is None:
-            stampid = self.stamps[-1]
-            self.stamp_id -= 1
-            self.execute_when_ready(action)
-        elif stampid in self.stamps:
-            self.execute_when_ready(action)
-        else:
-            print("Error: no such stamp")
-            return "no such stamp"
-    
+            stampid = self.stampsId[-1]
+        self.execute_when_ready(action)
+
     def clearstamps(self, n = None):
-        def action(*ignored):
-            if n is None:
-                self.screen.forget_objects(names = self.stamps)
-                print("removed all stamps")
-                self.stamp_id = 0
-            elif abs(n) > len(self.stamps):
-                print("There are only ",len(self.stamps), " stamps")
-                return "There are only "+str(len(self.stamps))+" stamps"
-            elif n > 0:
-                self.screen.forget_objects(names = self.stamps[:n])
-                print("removed stamps ", self.stamps[:n])
-                for i in self.stamps[:n]:
-                    self.stamps.remove(i)
-            elif n < 0:
-                self.screen.forget_objects(names = self.stamps[n:])
-                print("removed stamps ", self.stamps[n:])
-                self.stamp_id -= n
-                for i in self.stamps[n:]:
-                    self.stamps.remove(i)
-            else:
-                print("removed no stamp")
-        self.execute_when_ready(action) 
-            
+        names = self.stampsId
+        if n is None:
+            print("removed all stamps")
+        elif abs(n) > len(self.stamps):
+            print("There are only ",len(self.stampsId), " stamps")
+            return "There are only "+str(len(self.stampsId))+" stamps"
+        elif n >= 0:
+            names = self.stampsId[:n]
+            print("removed stamps ", names)
+        else:
+            names = self.stampsId[n:]
+            print("removed stamps ", names)
+        for i in names:
+            self.clearstamp(stampid=i)
+              
 
     def defer_later_executions(self, seconds):
         old = self.next_execution_time
