@@ -38,6 +38,20 @@ def rotate_translate(x, y, radians, xt, yt):
     return [xr + xt, yr + yt]
 
 
+class FakeScreen:
+
+    def __repr__(self):
+        print("FakeScreen init")
+        return "FakeScreen"
+
+    def __getattr__(self, attr):
+        print("FakeScreen getattr")
+        def dummy_function(*arguments):
+            print("FakeScreen getattr call")
+            return "not a real method, just a fake: " + repr(attr)
+        return dummy_function
+
+
 class Shape:
 
     def __init__(self, kind, data):
@@ -57,13 +71,15 @@ class Shape:
 class Turtle:
 
     # initial default configurations
-    color = "black"
+    _color = "black"
     lineWidth = 1
     direction_radians = 0
     direction_units = "degrees"
     position_stamp = (0, 0)
     speed_stamp = "normal"
     stamp_id = 0
+    draw_limit = None
+    draw_count = 0
 
     # stolen from turtle.py
     _shapes = {
@@ -94,7 +110,7 @@ class Turtle:
             frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
         )
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
-        self.icon = frame.polygon(points=self.icon_points, color=self.color, name=True)
+        self.icon = frame.polygon(points=self.icon_points, color=self._color, name=True)
 #         self.stamp = 0
         self.stampsItem = dict()
         self.stampsId = []
@@ -102,11 +118,44 @@ class Turtle:
         self.next_execution_time = time.time()
         #print("initially executing at", self.next_execution_time)
 
+    def draw_limit_exceeded(self):
+        self.draw_count += 1
+        if self.draw_count == self.draw_limit:
+            print ("\n   DRAW LIMIT REACHED\n")
+        return (self.draw_limit is not None) and (self.draw_count > self.draw_limit)
+
+    def getscreen(self):
+        "stubbed functionality for compatibility with standard Turtle module"
+        # delay to allow javascript to catch up
+        import time
+        time.sleep(0.1)
+        #self.screen.flush()
+        return FakeScreen()
+
+    def up(self):
+        print ('up is not yet implemented')
+
+    def down(self):
+        print ('down is not yet implemented')
+
+    def heading(self):
+        print ('heading is not yet implemented')
+
+    def setheading(self, *arguments):
+        print ('setheading is not yet implemented')
+
+    def goto(self, *arguments):
+        print ('goto is not yet implemented')
+
     def shape(self, name):
+        print ("shape")
         choice = self._shapes[name]
         choice.install(self)
 
     def forward(self, distance):
+        #print ("forward", distance)
+        if self.draw_limit_exceeded():
+            return # silently do nothing
         angle = self.direction_radians
         (x1, y1) = self.position_stamp
         x2 = x1 + math.cos(angle) * distance
@@ -118,7 +167,7 @@ class Turtle:
             line = self.frame.line(
                 x1=x1, y1=y1,   # One end point of the line
                 x2=x1, y2=y1,  # The other end point of the line
-                color=self.color,   # Optional color (default: "black")
+                color=self._color,   # Optional color (default: "black")
                 lineWidth=self.lineWidth,    # Optional line width
                 name=True,
             )
@@ -134,6 +183,9 @@ class Turtle:
         self.forward(-distance)
 
     def left(self, degrees):
+        #print("left", degrees)
+        if self.draw_limit_exceeded():
+            return # silently do nothing
         radians = degrees * math.pi / 180.0
         (x2, y2) = self.position_stamp
         angle = self.direction_radians = self.direction_radians + radians
@@ -150,6 +202,9 @@ class Turtle:
         self.left(-degrees)
         
     def stamp(self):
+        if self.draw_limit_exceeded():
+            return # silently do nothing
+        #print ("stamp")
         def action(*ignored):
 #             frame = self.screen.frame_region(
 #                 minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
@@ -163,6 +218,9 @@ class Turtle:
         return self.stamp_id
     
     def clearstamp(self, stampid = None):
+        if self.draw_limit_exceeded():
+            return # silently do nothing
+        #print("clearstamp")
         def action(*ignored):
             try:
 #                 self.stampsItem[stampid].visible(False)
@@ -178,6 +236,7 @@ class Turtle:
         self.execute_when_ready(action)
 
     def clearstamps(self, n = None):
+        #print ("clearstamps")
         names = self.stampsId
         if n is None:
             print("removed all stamps")
@@ -194,7 +253,7 @@ class Turtle:
             self.clearstamp(stampid=i)
     
     def color(self, color_name):
-        self.color = color_name
+        self._color = color_name
         self.icon.change(color=color_name)
         
     def speed(self, val):
@@ -204,7 +263,7 @@ class Turtle:
         return self.position
     
     def hideturtle(self):
-        pass
+        print ("hideturtle is not implemented")
 
     def defer_later_executions(self, seconds):
         old = self.next_execution_time
