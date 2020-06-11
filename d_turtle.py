@@ -75,8 +75,8 @@ class Turtle:
     lineWidth = 1
     direction_radians = 0
     direction_units = "degrees"
-    position_stamp = (0, 0)
-    speed_stamp = "normal"
+    position_icon = (0, 0)
+    speed_move = "normal"
     stamp_id = 0
     draw_limit = None
     draw_count = 0
@@ -157,7 +157,7 @@ class Turtle:
         if self.draw_limit_exceeded():
             return # silently do nothing
         angle = self.direction_radians
-        (x1, y1) = self.position_stamp
+        (x1, y1) = self.position_icon
         x2 = x1 + math.cos(angle) * distance
         y2 = y1 + math.sin(angle) * distance
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
@@ -176,7 +176,7 @@ class Turtle:
             self.icon_current_points = points
             self.stamp_id += 1
         self.defer_later_executions(delay)
-        self.position_stamp = (x2, y2)
+        self.position_icon = (x2, y2)
         self.execute_when_ready(action)
         
     def backward(self, distance):
@@ -187,7 +187,7 @@ class Turtle:
         if self.draw_limit_exceeded():
             return # silently do nothing
         radians = degrees * math.pi / 180.0
-        (x2, y2) = self.position_stamp
+        (x2, y2) = self.position_icon
         angle = self.direction_radians = self.direction_radians + radians
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
         delay = self.delay_seconds()
@@ -257,10 +257,10 @@ class Turtle:
         self.icon.change(color=color_name)
         
     def speed(self, val):
-        self.speed_stamp = val
+        self.speed_move = val
     
     def position(self):
-        return self.position
+        return self.position_icon
     
     def hideturtle(self):
         print ("hideturtle is not implemented")
@@ -271,7 +271,7 @@ class Turtle:
         #print ("advanced execution from", old, "to", self.next_execution_time)
 
     def execute_when_ready(self, action):
-        if not self.speed_stamp:
+        if not self.speed_move:
             # execute immediately
             return action()
         now = time.time()
@@ -290,7 +290,7 @@ class Turtle:
 
     def delay_seconds(self, distance=0):
         "Eventually this should return different values based on different speeds and distances"
-        if self.speed_stamp:
+        if self.speed_icon:
             return 1.0
         else:
             return 0
