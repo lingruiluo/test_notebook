@@ -137,17 +137,13 @@ class Turtle:
         return FakeScreen()
 
     def up(self):
-        delay = self.delay_seconds()
         def action(*ignored):
             self._drawing = False
-        self.defer_later_executions(delay)
         self.execute_when_ready(action)
 
     def down(self):
-        delay = self.delay_seconds()
         def action(*ignored):
             self._drawing = True
-        self.defer_later_executions(delay)
         self.execute_when_ready(action)
 
     def heading(self):
@@ -315,11 +311,15 @@ class Turtle:
             self.clearstamp(stampid=i)
     
     def color(self, color_name):
-        self._color = color_name
-        self.icon.change(color=color_name)
+        def action(*ignored):
+            self._color = color_name
+            self.icon.change(color=color_name)
+        self.execute_when_ready(action)
         
     def speed(self, val):
-        self.speed_move = val
+        def action(*ignored):
+            self.speed_move = val
+        self.execute_when_ready(action)
     
     def position(self):
         return self.position_icon
