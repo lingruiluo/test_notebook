@@ -80,6 +80,7 @@ class Turtle:
     stamp_id = 0
     draw_limit = None
     draw_count = 0
+    _drawing = True
 
     # stolen from turtle.py
     _shapes = {
@@ -133,19 +134,69 @@ class Turtle:
         return FakeScreen()
 
     def up(self):
-        print ('up is not yet implemented')
+        self._drawing = False
+        
 
     def down(self):
-        print ('down is not yet implemented')
+        self._drawing = True
 
     def heading(self):
-        print ('heading is not yet implemented')
+        return self.direction_radians * 180 / math.pi
 
-    def setheading(self, *arguments):
-        print ('setheading is not yet implemented')
+    def setheading(self, degrees):
+        """
+        0 - east
+        90 - north
+        180 - west
+        270 - south
+        """
+        angle = self.direction_radians = degrees * math.pi / 180
+        (x2, y2) = self.position_icon
+        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        delay = self.delay_seconds()
+        def action(*ignored):
+            self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
+            self.icon_current_points = points
+        self.defer_later_executions(delay)
+        self.execute_when_ready(action)
 
-    def goto(self, *arguments):
-        print ('goto is not yet implemented')
+    def home(self):
+        self.goto((0,0))
+    
+    def goto(self, x, y = None):
+        if self.draw_limit_exceeded():
+            return
+        (x1, y1) = self.position_icon
+        (x2, y2) = (x1, y1)
+        if y is None:
+            try:
+                (x2, y2) = x
+            except TypeError:
+                print("argument should be a tuple of coordinate or give x and y values")
+                raise
+        else:
+            (x2, y2) = (x, y)
+        radians = math.atan2(y2-y1,x2-x1)
+        angle = self.direction_radians = radians
+        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        delay = self.delay_seconds()
+        def action(*ignored):
+            self.screen.fit()
+            if self._drawing:
+                line = self.frame.line(
+                    x1=x1, y1=y1,
+                    x2=x1, y2=y1,
+                    color=self._color,
+                    lineWidth=self.lineWidth,
+                    name=True,
+                )
+                line.transition(x2=x2, y2=y2, seconds_duration=delay)
+            self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
+            self.icon_current_points = points
+            self.stamp_id += 1
+        self.defer_later_executions(delay)
+        self.position_icon = (x2, y2)
+        self.execute_when_ready(action)
 
     def shape(self, name):
         print ("shape")
@@ -164,14 +215,15 @@ class Turtle:
         delay = self.delay_seconds()
         def action(*ignored):
             self.screen.fit()
-            line = self.frame.line(
-                x1=x1, y1=y1,   # One end point of the line
-                x2=x1, y2=y1,  # The other end point of the line
-                color=self._color,   # Optional color (default: "black")
-                lineWidth=self.lineWidth,    # Optional line width
-                name=True,
-            )
-            line.transition(x2=x2, y2=y2, seconds_duration=delay)
+            if self._drawing:
+                line = self.frame.line(
+                    x1=x1, y1=y1,   # One end point of the line
+                    x2=x1, y2=y1,  # The other end point of the line
+                    color=self._color,   # Optional color (default: "black")
+                    lineWidth=self.lineWidth,    # Optional line width
+                    name=True,
+                )
+                line.transition(x2=x2, y2=y2, seconds_duration=delay)
             self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
             self.icon_current_points = points
             self.stamp_id += 1
@@ -290,7 +342,7 @@ class Turtle:
 
     def delay_seconds(self, distance=0):
         "Eventually this should return different values based on different speeds and distances"
-        if self.speed_icon:
+        if self.speed_move:
             return 1.0
         else:
             return 0
