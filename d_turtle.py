@@ -315,7 +315,15 @@ class Turtle:
         return self.position_icon
     
     def hideturtle(self):
-        print ("hideturtle is not implemented")
+#         print ("hideturtle is not implemented")
+        def action(*ignored):
+            self.icon.visible(False)
+        self.execute_when_ready(action)
+    
+    def showturtle(self):
+        def action(*ignored):
+            self.icon.visible(True)
+        self.execute_when_ready(action)
 
     def defer_later_executions(self, seconds):
         old = self.next_execution_time
