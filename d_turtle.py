@@ -37,6 +37,9 @@ def rotate_translate(x, y, radians, xt, yt):
     yr = x * s + y * c
     return [xr + xt, yr + yt]
 
+def reset():
+    global USUAL_SCREEN
+    USUAL_SCREEN = None
 
 class FakeScreen:
 
@@ -134,11 +137,18 @@ class Turtle:
         return FakeScreen()
 
     def up(self):
-        self._drawing = False
-        
+        delay = self.delay_seconds()
+        def action(*ignored):
+            self._drawing = False
+        self.defer_later_executions(delay)
+        self.execute_when_ready(action)
 
     def down(self):
-        self._drawing = True
+        delay = self.delay_seconds()
+        def action(*ignored):
+            self._drawing = True
+        self.defer_later_executions(delay)
+        self.execute_when_ready(action)
 
     def heading(self):
         return self.direction_radians * 180 / math.pi
@@ -315,7 +325,6 @@ class Turtle:
         return self.position_icon
     
     def hideturtle(self):
-#         print ("hideturtle is not implemented")
         def action(*ignored):
             self.icon.visible(False)
         self.execute_when_ready(action)
