@@ -199,7 +199,7 @@ class Turtle:
         self.execute_when_ready(action)
 
     def shape(self, name):
-        print ("shape")
+#         print ("shape")
         choice = self._shapes[name]
         choice.install(self)
 
