@@ -350,15 +350,15 @@ class Turtle:
 
     def delay_seconds(self, distance=0):
         "Eventually this should return different values based on different speeds and distances"
-        if isinstance(self.speed_move,str):
-            if self.speed_move == 'normal':
-                return 1.0
-            elif self.speed_move == 'slow':
-                return 2.0
+        speed = self.speed_move
+        if isinstance(speed,str):
+            if speed == 'normal':
+                speed = 1.0
+            elif speed == 'slow':
+                speed = 2.0
             else:
-                return 0.2
-        else:
-            return self.speed_move
+                speed = 0.2
+        return speed
 #         if self.speed_move:
 #             return 1.0
 #         else:
