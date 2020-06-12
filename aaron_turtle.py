@@ -24,6 +24,10 @@ def get_usual_screen(width=WIDTH, height=HEIGHT):
     # store info about turtles in the javascript element container
     screen.js_init("""
         element.turtle_info = { };
+
+        element.get_turtle_info = function(id) {
+            return element.turtle_info[id];
+        };
     """);
     if not debugging:
         display(screen)
@@ -158,7 +162,7 @@ class Turtle:
             icon_points=self.icon_points,
         )
         # This is a reference to the javascript object with information about this turtle.
-        self.js_info = screen.element.turtle_info[self.turtle_id]
+        self.js_info = screen.element.get_turtle_info(self.turtle_id)
         self.stampsItem = dict()
         self.stampsId = []
         self.icon_current_points = self.icon_points
