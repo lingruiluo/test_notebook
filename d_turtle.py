@@ -338,7 +338,14 @@ class Turtle:
         self.execute_when_ready(action)
         
     def speed(self, val):
+        speeds = {'fastest':0.1, 'fast':0.5, 'normal':1.0, 'slow':1.5, 'slowest':2.0 }
         self.speed_move = val
+        if isinstance(val, str):
+            if val in speeds:
+                self.speed_move = speeds[val]
+            else:
+                print("Please enter the correct speed value")
+                raise ValueError
 #         delay = self.delay_seconds()
 #         def action(*ignored):
 #             self.speed_move = val
@@ -356,6 +363,11 @@ class Turtle:
     def showturtle(self):
         def action(*ignored):
             self.icon.visible(True)
+        self.execute_when_ready(action)
+    
+    def pensize(self, size):
+        def action(*ignored):
+            self.lineWidth = size
         self.execute_when_ready(action)
 
     def defer_later_executions(self, seconds):
