@@ -37,6 +37,9 @@ def rotate_translate(x, y, radians, xt, yt):
     yr = x * s + y * c
     return [xr + xt, yr + yt]
 
+def icon_size(x, y, size, origin_size):
+    return [x*(1+size/10)/origin_size, y*(1+size/10)/origin_size]
+
 def reset():
     global USUAL_SCREEN
     USUAL_SCREEN = None
@@ -65,6 +68,7 @@ class Shape:
         kind = self.kind
         if kind == "polygon":
             in_turtle.icon_points = [[x, y] for [y, x] in self.data]
+            in_turtle.icon_points = [[x*in_turtle.lineWidth, y*in_turtle.lineWidth] for [x,y] in in_turtle.icon_points]
             in_turtle.forward(0)
             in_turtle.stamp_id -= 1
         else:
@@ -115,7 +119,6 @@ class Turtle:
         )
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
         self.icon = frame.polygon(points=self.icon_points, color=self._color, name=True)
-#         self.stamp = 0
         self.stampsItem = dict()
         self.stampsId = []
         self.icon_current_points = self.icon_points
@@ -366,8 +369,15 @@ class Turtle:
         self.execute_when_ready(action)
     
     def pensize(self, size):
+        size_points = [icon_size(x,y,size,self.lineWidth) for (x,y) in self.icon_points]
+        (x2, y2) = self.position_icon
+        angle = self.direction_radians
+        points = [rotate_translate(x,y,angle,x2,y2) for [x,y] in size_points]
         def action(*ignored):
+            self.screen.fit()
             self.lineWidth = size
+            self.icon.transition(points=points)
+            self.icon_current_points = points
         self.execute_when_ready(action)
 
     def defer_later_executions(self, seconds):
