@@ -19,6 +19,12 @@ def get_usual_screen(width=WIDTH, height=HEIGHT):
     if USUAL_SCREEN is not None:
         return USUAL_SCREEN
     screen = dual_canvas.DualCanvasWidget(width=width, height=height)
+    # use a counter to distinguish turtles
+    screen.turtle_count = 0
+    # store info about turtles in the javascript element container
+    screen.js_init("""
+        element.turtle_info = { };
+    """);
     if not debugging:
         display(screen)
         screen.in_dialog()
@@ -41,13 +47,13 @@ def rotate_translate(x, y, radians, xt, yt):
 class FakeScreen:
 
     def __repr__(self):
-        print("FakeScreen init")
+        #print("FakeScreen init")
         return "FakeScreen"
 
     def __getattr__(self, attr):
         print("FakeScreen getattr")
         def dummy_function(*arguments):
-            print("FakeScreen getattr call")
+            #print("FakeScreen getattr call")
             return "not a real method, just a fake: " + repr(attr)
         return dummy_function
 
@@ -104,15 +110,55 @@ class Turtle:
         #"blank" : Shape("image", self._blankimage())
     }
 
+    primary_js = """
+        // Store information about this turtle separately from other turtles.
+        debugger;
+        var info = { };
+        info.frame = element.frame_region(
+            10, 10, WIDTH-10, HEIGHT-10,
+            -WIDTH/2, -HEIGHT/2, WIDTH/2, HEIGHT/2,
+        );
+        info.icon = info.frame.polygon({
+            points:icon_points, color:color, name:true
+            });
+        info.delayed_execution = function(action, delay) {
+            if (delay > 0) {
+                setTimeout(action, delay);
+            } else {
+                action();
+            }
+        }
+        element.turtle_info[turtle_id] = info;
+    """
+
     def __init__(self):
         screen = self.screen = get_usual_screen()
-        frame = self.frame = screen.frame_region(
-            minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
-            frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
-        )
+        screen.turtle_count += 1
+        self.turtle_id = screen.turtle_count
+        #frame = self.frame = screen.frame_region(
+        #    minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
+        #    frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
+        #)
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
-        self.icon = frame.polygon(points=self.icon_points, color=self._color, name=True)
+        #self.icon = frame.polygon(points=self.icon_points, color=self._color, name=True)
 #         self.stamp = 0
+        self.all_js = (
+            self.primary_js
+            + self.icon_visible_js
+            + self.icon_color_change_js
+            + self.left_js
+            + self.forward_js
+        )
+        screen.js_init(
+            self.all_js,
+            turtle_id=self.turtle_id,
+            WIDTH=WIDTH,
+            HEIGHT=HEIGHT,
+            color=self._color,
+            icon_points=self.icon_points,
+        )
+        # This is a reference to the javascript object with information about this turtle.
+        self.js_info = screen.element.turtle_info[self.turtle_id]
         self.stampsItem = dict()
         self.stampsId = []
         self.icon_current_points = self.icon_points
@@ -129,14 +175,14 @@ class Turtle:
         "stubbed functionality for compatibility with standard Turtle module"
         # delay to allow javascript to catch up
         import time
-        time.sleep(0.1)
-        #self.screen.flush()
+        print ("FLUSH AND SLEEP", self.draw_count)
+        self.screen.flush()
+        time.sleep(3)
         return FakeScreen()
 
     def up(self):
         self._drawing = False
         
-
     def down(self):
         self._drawing = True
 
@@ -150,15 +196,17 @@ class Turtle:
         180 - west
         270 - south
         """
-        angle = self.direction_radians = degrees * math.pi / 180
-        (x2, y2) = self.position_icon
-        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
-        delay = self.delay_seconds()
-        def action(*ignored):
-            self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
-            self.icon_current_points = points
-        self.defer_later_executions(delay)
-        self.execute_when_ready(action)
+        #angle =  degrees * math.pi / 180 - self.direction_radians
+        degrees_change = degrees - (self.direction_radians * 180 / math.pi)
+        return self.left(degrees_change)
+        #(x2, y2) = self.position_icon
+        #points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        #delay = self.delay_seconds()
+        #def action(*ignored):
+        #    self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
+        #    self.icon_current_points = points
+        #self.defer_later_executions(delay)
+        #self.execute_when_ready(action)
 
     def home(self):
         self.goto((0,0))
@@ -180,28 +228,49 @@ class Turtle:
         angle = self.direction_radians = radians
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
         delay = self.delay_seconds()
-        def action(*ignored):
-            self.screen.fit()
-            if self._drawing:
-                line = self.frame.line(
-                    x1=x1, y1=y1,
-                    x2=x1, y2=y1,
-                    color=self._color,
-                    lineWidth=self.lineWidth,
-                    name=True,
-                )
-                line.transition(x2=x2, y2=y2, seconds_duration=delay)
-            self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
-            self.icon_current_points = points
-            self.stamp_id += 1
+        #def action(*ignored):
+        #    self.screen.fit()
+        #    if self._drawing:
+        #        line = self.frame.line(
+        #            x1=x1, y1=y1,
+        #            x2=x1, y2=y1,
+        #            color=self._color,
+        #            lineWidth=self.lineWidth,
+        #            name=True,
+        #        )
+        #        line.transition(x2=x2, y2=y2, seconds_duration=delay)
+        #    self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
+        self.icon_current_points = points
+        self.stamp_id += 1
         self.defer_later_executions(delay)
         self.position_icon = (x2, y2)
-        self.execute_when_ready(action)
+        #self.execute_when_ready(action)
+        return self.js_info.forward(points, x1, y1, x2, y2, self.color, self.lineWidth, self._drawing)
 
     def shape(self, name):
 #         print ("shape")
         choice = self._shapes[name]
         choice.install(self)
+
+    forward_js = """
+        info.forward = function(points, x1, y1, x2, y2, color, lineWidth, drawing, delay) {
+            var action = function() {
+                element.fit();
+                info.icon.transition({ points:points, cx:x2, cy:y2 }, delay);
+                if (drawing) {
+                    var line = info.frame.line({
+                        x1:x1, y1:y1,   // One end point of the line
+                        x2:x1, y2:y1,  // The other end point of the line
+                        color:color,   // Optional color (default: "black")
+                        lineWidth:lineWidth,    // Optional line width
+                        name:true,
+                    });
+                    line.transition({x2:x2, y2:y2}, delay)
+                }
+            };
+            info.delayed_execution(action, delay);
+        };
+    """
 
     def forward(self, distance):
         #print ("forward", distance)
@@ -213,26 +282,36 @@ class Turtle:
         y2 = y1 + math.sin(angle) * distance
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
         delay = self.delay_seconds()
-        def action(*ignored):
-            self.screen.fit()
-            if self._drawing:
-                line = self.frame.line(
-                    x1=x1, y1=y1,   # One end point of the line
-                    x2=x1, y2=y1,  # The other end point of the line
-                    color=self._color,   # Optional color (default: "black")
-                    lineWidth=self.lineWidth,    # Optional line width
-                    name=True,
-                )
-                line.transition(x2=x2, y2=y2, seconds_duration=delay)
-            self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
-            self.icon_current_points = points
-            self.stamp_id += 1
+        #def action(*ignored):
+        #    self.screen.fit()
+        #    if self._drawing:
+        #        line = self.frame.line(
+        #            x1=x1, y1=y1,   # One end point of the line
+        #            x2=x1, y2=y1,  # The other end point of the line
+        #            color=self._color,   # Optional color (default: "black")
+        #            lineWidth=self.lineWidth,    # Optional line width
+        #            name=True,
+        #        )
+        #        line.transition(x2=x2, y2=y2, seconds_duration=delay)
+        #    self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
+        self.icon_current_points = points
+        self.stamp_id += 1
         self.defer_later_executions(delay)
         self.position_icon = (x2, y2)
-        self.execute_when_ready(action)
+        #self.execute_when_ready(action)
+        return self.js_info.forward(points, x1, y1, x2, y2, self.color, self.lineWidth, self._drawing)
         
     def backward(self, distance):
         self.forward(-distance)
+        
+    left_js = """
+        info.left = function(points, delay) {
+            var action = function() {
+                info.icon.transition({ points:points }, delay);
+            };
+            info.delayed_execution(action, delay);
+        };
+    """
 
     def left(self, degrees):
         #print("left", degrees)
@@ -243,12 +322,13 @@ class Turtle:
         angle = self.direction_radians = self.direction_radians + radians
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
         delay = self.delay_seconds()
-        def action(*ignored):
-            self.screen.fit()
-            self.icon.transition(points=points, seconds_duration=delay)
-            self.icon_current_points = points
+        #def action(*ignored):
+        #    self.screen.fit()
+        #    self.icon.transition(points=points, seconds_duration=delay)
+        #    self.icon_current_points = points
         self.defer_later_executions(delay)
-        self.execute_when_ready(action)
+        #self.execute_when_ready(action)
+        return self.js_info.left(points, delay)
     
     def right(self, degrees):
         self.left(-degrees)
@@ -304,29 +384,52 @@ class Turtle:
         for i in names:
             self.clearstamp(stampid=i)
     
+    icon_color_change_js = """
+        info.icon_color_change = function(value, delay) {
+            var action = function() {
+                info.icon.change({ color: value });
+            };
+            info.delayed_execution(action, delay);
+        };
+    """
     def color(self, color_name):
         self._color = color_name
-        self.icon.change(color=color_name)
+        #self.icon.change(color=color_name)
+        return self.js_info.icon_color_change(color_name, self.current_delay())
         
     def speed(self, val):
         self.speed_move = val
     
     def position(self):
         return self.position_icon
+
+    icon_visible_js = """
+        info.icon_visible = function(value, delay) {
+            var action = function() {
+                info.icon.visible(value);
+            }
+            info.delayed_execution(action, delay);
+        };
+    """
     
     def hideturtle(self):
+        return self.js_info.icon_visible(False, self.current_delay())
 #         print ("hideturtle is not implemented")
-        def action(*ignored):
-            self.icon.visible(False)
-        self.execute_when_ready(action)
+        #def action(*ignored):
+        #    self.icon.visible(False)
+        #self.execute_when_ready(action)
     
     def showturtle(self):
-        def action(*ignored):
-            self.icon.visible(True)
-        self.execute_when_ready(action)
+        return self.js_info.icon_visible(True, self.current_delay())
+        #def action(*ignored):
+        #    self.icon.visible(True)
+        #self.execute_when_ready(action)
+
+    def current_delay(self):
+        return max(0, self.next_execution_time - time.time())
 
     def defer_later_executions(self, seconds):
-        old = self.next_execution_time
+        old = max(self.next_execution_time, time.time())
         self.next_execution_time = old + seconds
         #print ("advanced execution from", old, "to", self.next_execution_time)
 
