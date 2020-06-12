@@ -310,6 +310,27 @@ class Turtle:
         for i in names:
             self.clearstamp(stampid=i)
     
+    def dot(self,size=None,*color):
+        if self.draw_limit_exceeded():
+            return
+        (x1, y1) = self.position_icon
+        delay = self.delay_seconds()
+        if size is None:
+            size = 5
+        if not color:
+            color = self._color
+        def action(*ignored):
+            self.screen.fit()
+            dot = self.frame.circle(
+                    x=x1, y=y1,r=size,
+                    color=color,   # Optional color (default: "black")
+                    fill=True,
+                    name=True,
+                )
+#             dot.transition(r=size, seconds_duration=delay)
+        self.defer_later_executions(0.5)
+        self.execute_when_ready(action)
+    
     def color(self, color_name):
         def action(*ignored):
             self._color = color_name
@@ -317,9 +338,12 @@ class Turtle:
         self.execute_when_ready(action)
         
     def speed(self, val):
-        def action(*ignored):
-            self.speed_move = val
-        self.execute_when_ready(action)
+        self.speed_move = val
+#         delay = self.delay_seconds()
+#         def action(*ignored):
+#             self.speed_move = val
+#         self.defer_later_executions(delay)
+#         self.execute_when_ready(action)
     
     def position(self):
         return self.position_icon
