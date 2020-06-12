@@ -37,8 +37,8 @@ def rotate_translate(x, y, radians, xt, yt):
     yr = x * s + y * c
     return [xr + xt, yr + yt]
 
-def icon_size(x, y, size, origin_size):
-    return [x*(1+size/10)/origin_size, y*(1+size/10)/origin_size]
+def icon_size(x, y, size):
+    return [x*(1+(size-1)/10), y*(1+(size-1)/10)]
 
 def reset():
     global USUAL_SCREEN
@@ -117,6 +117,9 @@ class Turtle:
             minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
             frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
         )
+        self.frame_rect = frame.rect(x=-WIDTH/2-10, y=-HEIGHT/2-10, w=WIDTH, h=HEIGHT, color="rgb(0,0,0,0)", name=True)
+        
+        self.frame_rect.on("click",self.click_event)
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
         self.icon = frame.polygon(points=self.icon_points, color=self._color, name=True)
         self.stampsItem = dict()
@@ -125,6 +128,12 @@ class Turtle:
         self.next_execution_time = time.time()
         #print("initially executing at", self.next_execution_time)
 
+    def click_event(self, event):
+        location = event["model_location"]
+        def action(*ignored):
+            self.goto(location['x'], location['y'])
+        self.execute_when_ready(action)
+        
     def draw_limit_exceeded(self):
         self.draw_count += 1
         if self.draw_count == self.draw_limit:
@@ -161,7 +170,9 @@ class Turtle:
         """
         angle = self.direction_radians = degrees * math.pi / 180
         (x2, y2) = self.position_icon
-        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        
+        size_points = [icon_size(x,y,self.lineWidth) for (x,y) in self.icon_points] 
+        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in size_points]
         delay = self.delay_seconds()
         def action(*ignored):
             self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
@@ -187,7 +198,8 @@ class Turtle:
             (x2, y2) = (x, y)
         radians = math.atan2(y2-y1,x2-x1)
         angle = self.direction_radians = radians
-        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        size_points = [icon_size(x,y,self.lineWidth) for (x,y) in self.icon_points]
+        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in size_points]
         delay = self.delay_seconds()
         def action(*ignored):
             self.screen.fit()
@@ -220,7 +232,8 @@ class Turtle:
         (x1, y1) = self.position_icon
         x2 = x1 + math.cos(angle) * distance
         y2 = y1 + math.sin(angle) * distance
-        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        size_points = [icon_size(x,y,self.lineWidth) for (x,y) in self.icon_points]
+        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in size_points]
         delay = self.delay_seconds()
         def action(*ignored):
             self.screen.fit()
@@ -244,13 +257,13 @@ class Turtle:
         self.forward(-distance)
 
     def left(self, degrees):
-        #print("left", degrees)
         if self.draw_limit_exceeded():
             return # silently do nothing
         radians = degrees * math.pi / 180.0
         (x2, y2) = self.position_icon
         angle = self.direction_radians = self.direction_radians + radians
-        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in self.icon_points]
+        size_points = [icon_size(x,y,self.lineWidth) for (x,y) in self.icon_points]
+        points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in size_points]
         delay = self.delay_seconds()
         def action(*ignored):
             self.screen.fit()
@@ -265,12 +278,7 @@ class Turtle:
     def stamp(self):
         if self.draw_limit_exceeded():
             return # silently do nothing
-        #print ("stamp")
         def action(*ignored):
-#             frame = self.screen.frame_region(
-#                 minx=10, miny=10, maxx=WIDTH-10, maxy=HEIGHT-10,
-#                 frame_minx=-WIDTH/2, frame_miny=-HEIGHT/2, frame_maxx=WIDTH/2, frame_maxy=HEIGHT/2,
-#             )
             stamp = self.frame.polygon(points=self.icon_current_points, color=self.color, name=True)
             if self.stamp_id not in self.stampsId:
                 self.stampsId.append(self.stamp_id)
@@ -330,7 +338,6 @@ class Turtle:
                     fill=True,
                     name=True,
                 )
-#             dot.transition(r=size, seconds_duration=delay)
         self.defer_later_executions(0.5)
         self.execute_when_ready(action)
     
@@ -369,15 +376,15 @@ class Turtle:
         self.execute_when_ready(action)
     
     def pensize(self, size):
-        size_points = [icon_size(x,y,size,self.lineWidth) for (x,y) in self.icon_points]
+        size_points = [icon_size(x,y,size) for (x,y) in self.icon_points]
         (x2, y2) = self.position_icon
         angle = self.direction_radians
         points = [rotate_translate(x,y,angle,x2,y2) for [x,y] in size_points]
         def action(*ignored):
             self.screen.fit()
-            self.lineWidth = size
             self.icon.transition(points=points)
             self.icon_current_points = points
+            self.lineWidth = size
         self.execute_when_ready(action)
 
     def defer_later_executions(self, seconds):
