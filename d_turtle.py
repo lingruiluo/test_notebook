@@ -88,6 +88,7 @@ class Turtle:
     draw_limit = None
     draw_count = 0
     _drawing = True
+    _lines = []
 
     # stolen from turtle.py
     _shapes = {
@@ -212,12 +213,28 @@ class Turtle:
                     name=True,
                 )
                 line.transition(x2=x2, y2=y2, seconds_duration=delay)
+                self._lines.append(line)
             self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
             self.icon_current_points = points
             self.stamp_id += 1
         self.defer_later_executions(delay)
         self.position_icon = (x2, y2)
         self.execute_when_ready(action)
+        
+    def distance(self, x, y=None):
+        if self.draw_limit_exceeded():
+            return
+        (x1, y1) = self.position_icon
+        (x2, y2) = (x1, y1)
+        if y is None:
+            try:
+                (x2, y2) = x
+            except TypeError:
+                print("argument should be a tuple of coordinate or give x and y values")
+                raise
+        else:
+            (x2, y2) = (x, y)
+        return round(math.sqrt((x2 - x1)**2 + (y2 - y1)**2),2)
 
     def shape(self, name):
 #         print ("shape")
@@ -246,6 +263,7 @@ class Turtle:
                     name=True,
                 )
                 line.transition(x2=x2, y2=y2, seconds_duration=delay)
+                self._lines.append(line)
             self.icon.transition(points=points, cx=x2, cy=y2, seconds_duration=delay)
             self.icon_current_points = points
             self.stamp_id += 1
@@ -320,6 +338,13 @@ class Turtle:
             print("removed stamps ", names)
         for i in names:
             self.clearstamp(stampid=i)
+    
+    def clear(self):
+        def action(*ignored):
+            for line in self._lines:
+                line.forget()
+            self._lines = []
+        self.execute_when_ready(action)
     
     def dot(self,size=None,*color):
         if self.draw_limit_exceeded():
