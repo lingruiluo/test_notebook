@@ -123,6 +123,7 @@ class Turtle:
         self.frame_rect.on("click",self.click_event)
         self.icon_points = [(-10,-10), (-10, 10), (17, 0)]
         self.icon = frame.polygon(points=self.icon_points, color=self._color, name=True)
+        self.icon.on("click", self.click_icon)
         self.stampsItem = dict()
         self.stampsId = []
         self.icon_current_points = self.icon_points
@@ -134,6 +135,12 @@ class Turtle:
         def action(*ignored):
             self.goto(location['x'], location['y'])
         self.execute_when_ready(action)
+    
+    def click_icon(self, event):
+        self.frame_rect.on("mouseover", self.mouse_over)
+    
+    def mouse_over(self, event):
+        self.click_event(event)
         
     def draw_limit_exceeded(self):
         self.draw_count += 1
