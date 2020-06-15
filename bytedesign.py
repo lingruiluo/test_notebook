@@ -23,7 +23,8 @@ mode as fast as possible.
 """
 
 # from turtle import Turtle, mainloop
-from d_turtle import Turtle
+# from d_turtle import Turtle
+from turtle_1 import Turtle
 from time import perf_counter as clock
 
 # wrapper for any additional drawing routines
