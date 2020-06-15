@@ -191,7 +191,7 @@ class Turtle:
         two = javascript_eval(self.screen, "1+1")
         assert two == 2
         self.screen.auto_flush = False
-        time.sleep(3)
+#         time.sleep(3)
         return FakeScreen()
 
     def up(self):
