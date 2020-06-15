@@ -173,14 +173,24 @@ class Turtle:
         self.draw_count += 1
         if self.draw_count == self.draw_limit:
             print ("\n   DRAW LIMIT REACHED\n")
+            raise ValueError("Draw limit")
         return (self.draw_limit is not None) and (self.draw_count > self.draw_limit)
+
+    flushes = None
 
     def getscreen(self):
         "stubbed functionality for compatibility with standard Turtle module"
         # delay to allow javascript to catch up
-        import time
-        print ("FLUSH AND SLEEP", self.draw_count)
+        self.flushes = self.flushes or []
+        self.flushes.append(self.draw_count)
+        from jp_doodle.auto_capture import javascript_eval
+        print ("FLUSH AND SYNC", self.draw_count)
         self.screen.flush()
+        self.screen.element.redraw()
+        self.screen.auto_flush = True
+        two = javascript_eval(self.screen, "1+1")
+        assert two == 2
+        self.screen.auto_flush = False
         time.sleep(3)
         return FakeScreen()
 
