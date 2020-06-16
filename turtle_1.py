@@ -176,7 +176,6 @@ class Turtle:
         self.js_info = screen.element.get_turtle_info(self.turtle_id)
         
         self.js_info.frame_rect.on("click",self.click_event)
-        self.js_info.icon.on("click", self.click_icon)
         
         self.stampsItem = dict()
         self.stampsId = []
@@ -214,21 +213,17 @@ class Turtle:
             self.goto(location['x'], location['y'])
         self.execute_when_ready(action)
     
-    def click_icon(self, event):
-        self.js_info.frame_rect.on("mouseover", self.mouse_over)
-    
-    def mouse_over(self, event):
-        self.click_event(event)
-    
     def up(self):
-        def action(*ignored):
-            self._drawing = False
-        self.execute_when_ready(action)
+        # def action(*ignored):
+        #     self._drawing = False
+        # self.execute_when_ready(action)
+        self._drawing = False
 
     def down(self):
-        def action(*ignored):
-            self._drawing = True
-        self.execute_when_ready(action)
+        # def action(*ignored):
+        #     self._drawing = True
+        # self.execute_when_ready(action)
+        self._drawing = True
 
     def heading(self):
         return self.direction_radians * 180 / math.pi
@@ -265,9 +260,9 @@ class Turtle:
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in size_points]
         delay = self.delay_seconds()
         self.icon_current_points = points
-        self.defer_later_executions(delay)
         self.position_icon = (x2, y2)
-        return self.js_info.forward(points, x1, y1, x2, y2, self._color, self.lineWidth, self._drawing)
+        self.defer_later_executions(delay)
+        return self.js_info.forward(points, x1, y1, x2, y2, self._color, self.lineWidth, self._drawing,delay, self.action_delay())
         
     def distance(self, x, y=None):
         if self.draw_limit_exceeded():
@@ -290,7 +285,7 @@ class Turtle:
         choice.install(self)
         
     forward_js = """
-        info.forward = function(points, x1, y1, x2, y2, color, lineWidth, drawing, delay) {
+        info.forward = function(points, x1, y1, x2, y2, color, lineWidth, drawing, delay, interval) {
             var action = function() {
                 element.fit();
                 info.icon.transition({ points:points, cx:x2, cy:y2 }, delay);
@@ -306,7 +301,7 @@ class Turtle:
                     info._lines.push(line)
                 }
             };
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         };
     """
 
@@ -322,19 +317,20 @@ class Turtle:
         points = [rotate_translate(x,y,angle,x2,y2) for (x,y) in size_points]
         delay = self.delay_seconds()
         self.icon_current_points = points
-        self.defer_later_executions(delay)
         self.position_icon = (x2, y2)
-        return self.js_info.forward(points, x1, y1, x2, y2, self._color, self.lineWidth, self._drawing)
+        self.defer_later_executions(delay)
+        interval = self.action_delay()
+        return self.js_info.forward(points, x1, y1, x2, y2, self._color, self.lineWidth, self._drawing, delay, interval)
         
     def backward(self, distance):
         self.forward(-distance)
 
     left_js = """
-        info.left = function(points, delay) {
+        info.left = function(points, delay, interval) {
             var action = function() {
                 info.icon.transition({ points:points }, delay);
             };
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         };
     """
     
@@ -349,14 +345,14 @@ class Turtle:
         delay = self.delay_seconds()
         self.icon_current_points = points
         self.defer_later_executions(delay)
-        return self.js_info.left(points, delay)
+        interval = self.action_delay()
+        return self.js_info.left(points, delay, interval)
     
     def right(self, degrees):
         self.left(-degrees)
     
     stamp_js = """
-        debugger;
-        info.stamp = function(points, color, delay, id) {
+        info.stamp = function(points, color, delay, id, interval) {
             var action = function() {
                 var stamp = info.frame.polygon({
                     points:points,
@@ -365,25 +361,23 @@ class Turtle:
                 });
                 info._stamps.push(stamp);
             };
-            info.delayed_execution(action, delay);
-            return id;
+            info.delayed_execution(action, interval);
         };
-        debugger;
-        info.clear_stamp = function(id, delay) {
+        info.clear_stamp = function(id, delay, interval) {
             var action = function() {
                 info._stamps[id-1].forget();
                 info._stamps.remove(id-1);
             };
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         };
-        info.clear_stamps = function(delay){
+        info.clear_stamps = function(delay, interval){
             var action = function(){
                 for (i = 0; i < info._stamps.length; i++) {
                       info._stamps[i].forget();
                  };
                 info._stamps = [];
             };
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         };
     """
     
@@ -393,7 +387,9 @@ class Turtle:
         self.stamp_id += 1
         self.stampsId.append(self.stamp_id)
         delay = self.delay_seconds()
-        return self.js_info.stamp(self.icon_current_points, self._color, delay, self.stamp_id)
+        self.defer_later_executions(delay)
+        interval = self.action_delay()
+        return self.js_info.stamp(self.icon_current_points, self._color, delay, self.stamp_id, interval)
     
     def clearstamp(self, stampid = None):
         if self.draw_limit_exceeded():
@@ -402,13 +398,17 @@ class Turtle:
             stampid = self.stamp_id
         delay = self.delay_seconds()
         self.stampsId.remove(stampid)
-        return self.js_info.clear_stamp(stampid, delay)
+        self.defer_later_executions(delay)
+        interval = self.action_delay()
+        return self.js_info.clear_stamp(stampid, delay, interval)
 
     def clearstamps(self, n = None):
         delay = self.delay_seconds()
         if n is None:
             self.stampsId = []
-            return self.js_info.clear_stamps(delay)
+            self.defer_later_executions(delay)
+            interval = self.action_delay()
+            return self.js_info.clear_stamps(delay, interval)
         elif abs(n) > len(self.stamps):
             print("There are only ",len(self.stampsId), " stamps")
             return "There are only "+str(len(self.stampsId))+" stamps"
@@ -421,7 +421,7 @@ class Turtle:
             self.clearstamp(stampid=i)
     
     clear_js = """
-        info.clear = function(delay) {
+        info.clear = function(interval) {
             var action = function() {
                  for (i = 0; i < info._lines.length; i++) {
                       info._lines[i].forget();
@@ -432,16 +432,18 @@ class Turtle:
                  };
                  info._dots = [];
             };
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         }
     """
     
     def clear(self):
         delay = self.delay_seconds()
-        return self.js_info.clear(delay)
+        self.defer_later_executions(delay)
+        interval = self.action_delay()
+        return self.js_info.clear(interval)
     
     dot_js = """
-        info.dot = function(x, y, r, color) {
+        info.dot = function(x, y, r, color, delay) {
             var action = function() {
                 element.fit();
                 var circle = info.frame.circle({
@@ -450,16 +452,16 @@ class Turtle:
                 });
                 info._dots.push(circle);
             };
-            info.delayed_execution(action, 0.5);
+            info.delayed_execution(action, delay);
         };
-        info.clear_dot = function(delay) {
+        info.clear_dot = function(interval) {
             var action = function() {
                 for (i = 0; i < info._dots.length; i++) {
                       info._dots[i].forget();
                  };
                  info._dots = [];
             };
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         };
     """
     
@@ -467,16 +469,19 @@ class Turtle:
         if self.draw_limit_exceeded():
             return
         (x1, y1) = self.position_icon
-        delay = self.delay_seconds()
         if size is None:
             size = 5
         if not color:
             color = self._color
-        return self.js_info.dot(x1,y1,size,color)
+        delay = self.delay_seconds()
+        self.defer_later_executions(delay)
+        return self.js_info.dot(x1,y1,size,color, self.action_delay())
     
     def clear_dot(self):
         delay = self.delay_seconds()
-        return self.js_info.clear_dot(delay)
+        self.defer_later_executions(delay)
+        interval = self.action_delay()
+        return self.js_info.clear_dot(interval)
     
     icon_color_change_js = """
         info.icon_color_change = function(value, delay) {
@@ -489,7 +494,9 @@ class Turtle:
     
     def color(self, color_name):
         self._color = color_name
-        return self.js_info.icon_color_change(color_name, self.current_delay())
+        delay = self.delay_seconds()
+        self.defer_later_executions(delay)
+        return self.js_info.icon_color_change(color_name, self.action_delay())
         
     def speed(self, val):
         speeds = {'fastest':0.1, 'fast':0.5, 'normal':1.0, 'slow':1.5, 'slowest':2.0 }
@@ -514,18 +521,18 @@ class Turtle:
     """
     
     def hideturtle(self):
-        return self.js_info.icon_visible(False, self.current_delay())
+        return self.js_info.icon_visible(False, self.action_delay())
     
     def showturtle(self):
-        return self.js_info.icon_visible(True, self.current_delay())
+        return self.js_info.icon_visible(True, self.action_delay())
     
     icon_size_js = """
-        info.icon_pensize = function(points, delay) {
+        info.icon_pensize = function(points, delay, interval) {
             var action=function(){
                 element.fit();
                 info.icon.transition({ points:points }, delay);
             }
-            info.delayed_execution(action, delay);
+            info.delayed_execution(action, interval);
         };
     """
     
@@ -537,7 +544,8 @@ class Turtle:
         self.icon_current_points = points
         self.lineWidth = size
         delay = self.delay_seconds()
-        return self.js_info.icon_pensize(points, delay)
+        self.defer_later_executions(delay)
+        return self.js_info.icon_pensize(points, delay, self.action_delay())
 
     def current_delay(self):
         return max(0, self.next_execution_time - time.time())
@@ -564,6 +572,14 @@ class Turtle:
                 self.next_execution_time = now
         interval = max(interval, 1)
         self.screen.setTimeout(act_then_reset, interval)
+
+    def action_delay(self):
+        now = time.time()
+        ms_interval = (self.next_execution_time - now) * 1000
+        interval = max(ms_interval, 1)
+        if now > self.next_execution_time:
+            self.next_execution_time = now
+        return interval
 
     def delay_seconds(self, distance=0):
         "Eventually this should return different values based on different speeds and distances"
