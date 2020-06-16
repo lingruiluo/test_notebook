@@ -409,7 +409,7 @@ class Turtle:
             self.defer_later_executions(delay)
             interval = self.action_delay()
             return self.js_info.clear_stamps(delay, interval)
-        elif abs(n) > len(self.stamps):
+        elif abs(n) > len(self.stampsId):
             print("There are only ",len(self.stampsId), " stamps")
             return "There are only "+str(len(self.stampsId))+" stamps"
         elif n >= 0:
