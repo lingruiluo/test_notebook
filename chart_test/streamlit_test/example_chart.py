@@ -1,12 +1,11 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import chart_ipynb as cpy
+import chart_ipynb
 from chart_ipynb import time_series
 import urllib
 from datetime import time, datetime
 from IPython.display import display
-import altair as alt
 import streamlit.components.v1 as components
 import json
 
