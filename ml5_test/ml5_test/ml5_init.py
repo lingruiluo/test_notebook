@@ -59,36 +59,36 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
             element.empty();
 
             const nn = ml5.neuralNetwork(options);
+            console.log("create network done!");
             element.nn_info = {
                 network: nn };
-            console.log("create network done")
         """, options = options)
 
     def add_data(self, inputs, outputs):
         self.js_init("""
             element.nn_info.network.addData(inputs, outputs);
+            //console.log(element.nn_info.network.data.data);
         """, inputs = inputs, outputs = outputs)
 
     
     def normalize_data(self):
         self.js_init("""
             element.nn_info.network.normalizeData();
+            console.log(element.nn_info.network.data.data);
         """)
 
     def train_data(self, trainingOptions=None):
         self.js_init("""
-            function doneTraining() {
-                console.log('done!');
-            }
             function whileTraining(epoch, loss) {
-                console.log(`epoch: ${epoch}, loss:${loss}`);
+                console.log(epoch);
+                //console.log(`epoch: ${epoch}, loss:${loss}`);
             }
             function doneTraining() {
                 console.log('done!');
             }
-            element.nn_info.network.train(whileTraining, doneTraining);
+            element.nn_info.network.train(trainingOptions,whileTraining, doneTraining);
 
-        """)#,trainingOptions = trainingOptions)
+        """,trainingOptions = trainingOptions)
 
     def classify_data(self, input, callback=None):
         if callback is None:
