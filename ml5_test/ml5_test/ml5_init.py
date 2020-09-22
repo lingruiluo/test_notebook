@@ -32,6 +32,8 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
         if options is None:
             options = self.default_options()
         self.options = options
+        self.classify_callback_list = []
+        self.predict_callback_list = []
 
     def default_options(self):
         return {
@@ -55,6 +57,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
     def initialize_framework(self, options=None):
         if options is None:
             options = self.options
+        display(self.debugging_display())
         self.js_init("""
             element.empty();
 
@@ -81,7 +84,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
         self.js_init("""
             function whileTraining(epoch, loss) {
                 console.log(epoch);
-                //console.log(`epoch: ${epoch}, loss:${loss}`);
+                console.log(`epoch: ${epoch}, loss:${loss}`);
             }
             function doneTraining() {
                 console.log('done!');
@@ -106,9 +109,8 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
 
         """, input=input, callback=callback)
     
-    classify_callback_list = []
     def classify_callback(self, info):
-        classify_callback_list.append(info)
+        self.classify_callback_list.append(info)
 
 
     def predict_data(self, input, callback=None):
@@ -126,6 +128,6 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
             element.nn_info.network.predict(input, handleResults);
 
         """, input=input, callback=callback)
-    predict_callback_list = []
+
     def predict_callback(self, info):
-        predict_callback_list.append(info)
+        self.predict_callback_list.append(info)
