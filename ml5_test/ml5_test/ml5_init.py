@@ -52,14 +52,16 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
         else:
             self.options['layers'] = [layer]
 
-    def initialize_framework(self, options):
-        
+    def initialize_framework(self, options=None):
+        if options is None:
+            options = self.options
         self.js_init("""
             element.empty();
 
             const nn = ml5.neuralNetwork(options);
             element.nn_info = {
                 network: nn };
+            console.log("create network done")
         """, options = options)
 
     def add_data(self, inputs, outputs):
@@ -73,7 +75,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
             element.nn_info.network.normalizeData();
         """)
 
-    def train_data(self, trainingOptions):
+    def train_data(self, trainingOptions=None):
         self.js_init("""
             function doneTraining() {
                 console.log('done!');
