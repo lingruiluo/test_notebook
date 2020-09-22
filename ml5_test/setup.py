@@ -17,10 +17,8 @@ setup(
     install_requires=[
         "jp_proxy_widget", 
         "jp_doodle",
-        "datetime", 
         "numpy", 
         "pandas",
-        "pandas_datareader", 
         "pillow", 
         "imageio",
         "jupyter-ui-poll",
