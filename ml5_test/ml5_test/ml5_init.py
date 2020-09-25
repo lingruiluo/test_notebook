@@ -88,10 +88,15 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
             }
             function doneTraining() {
                 console.log('done!');
+                done_callback();
             }
             element.nn_info.network.train(trainingOptions,whileTraining, doneTraining);
 
-        """,trainingOptions = trainingOptions)
+        """,trainingOptions = trainingOptions, done_callback =self.done_callback)
+
+    def done_callback(self):
+        ##
+        print("done!")
 
     def classify_data(self, input, callback=None):
         if callback is None:
