@@ -4,6 +4,8 @@ Framework for wrapping
 
 import jp_proxy_widget
 from IPython.display import display
+from jupyter_ui_poll import ui_events
+import time
 
 
 def load_requirements(widget=None, silent=True, additional=()):
@@ -28,12 +30,15 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
     def __init__(self, options=None, *pargs, **kwargs):
         super(ML5Class, self).__init__(*pargs, **kwargs)
         load_requirements(self)
+        display(self.debugging_display())
         self.element.html("Loaded ml5.js")
         if options is None:
             options = self.default_options()
         self.options = options
         self.classify_callback_list = []
         self.predict_callback_list = []
+        self.train_done = False
+        self.classify_done = False
 
     def default_options(self):
         return {
@@ -57,10 +62,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
     def initialize_framework(self, options=None):
         if options is None:
             options = self.options
-        display(self.debugging_display())
         self.js_init("""
-            element.empty();
-
             const nn = ml5.neuralNetwork(options);
             console.log("create network done!");
             element.nn_info = {
@@ -81,6 +83,10 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
         """)
 
     def train_data(self, trainingOptions=None):
+        self.train_done = False
+        def done_callback():
+            self.train_done = True
+        
         self.js_init("""
             function whileTraining(epoch, loss) {
                 console.log(epoch);
@@ -92,7 +98,14 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
             }
             element.nn_info.network.train(trainingOptions,whileTraining, doneTraining);
 
-        """,trainingOptions = trainingOptions, done_callback =self.done_callback)
+
+        """,trainingOptions = trainingOptions, done_callback =done_callback)
+        with ui_events() as poll:
+            while self.train_done is False:
+                poll(10)                # React to UI events (upto 10 at a time)
+                print('.', end='')
+                time.sleep(0.1)
+        print('done')
 
     def done_callback(self):
         ##
@@ -101,6 +114,9 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
     def classify_data(self, input, callback=None):
         if callback is None:
             callback = self.classify_callback
+        self.classify_done = False
+        def done_callback():
+            self.classify_done = True
         self.js_init("""
             function handleResults(error, result) {
                 if(error){
@@ -109,10 +125,17 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
                 }
                 console.log(result);
                 callback(result);
+                done_callback();
             }
             element.nn_info.network.classify(input, handleResults);
 
-        """, input=input, callback=callback)
+        """, input=input, callback=callback, done_callback = done_callback)
+        with ui_events() as poll:
+            while self.classify_done is False:
+                poll(10)                # React to UI events (upto 10 at a time)
+                print('.', end='')
+                time.sleep(0.1)
+        print('done')
     
     def classify_callback(self, info):
         self.classify_callback_list.append(info)
