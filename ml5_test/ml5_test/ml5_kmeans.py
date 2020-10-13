@@ -13,7 +13,7 @@ class Kmeans(ml5_init.ML5Class):
         self.data = []
         if data is not None:
             self.data = data
-        self.cluster_centroid = []
+        self.data_label = []
         self.js_init("""
             element.nn_info = {};
             element.nn_info.data = input_data;
@@ -29,8 +29,8 @@ class Kmeans(ml5_init.ML5Class):
 
     def initialize(self, data=None, options=None):
         
-        def cluster_centroid_callback(info):
-            self.cluster_centroid.append(info)
+        def data_label_callback(info):
+            self.data_label.append(info)
         
         self.train_done = False
         def done_callback():
@@ -49,7 +49,7 @@ class Kmeans(ml5_init.ML5Class):
                 element.nn_info.output = kmeans.dataset;
                 console.log(kmeans.dataset);
                 for (x = 0; x < kmeans.dataset.length; x++){
-                    cluster_centroid_callback(kmeans.dataset[x].centroid);
+                    data_label_callback(kmeans.dataset[x].centroid);
                 }
                 console.log("all done:)");
             }
@@ -57,7 +57,7 @@ class Kmeans(ml5_init.ML5Class):
             const kmeans = ml5.kmeans(data, options, clustersCalculated);
             element.nn_info.network=kmeans;
             done_callback();
-        """, data = data, options = options, cluster_centroid_callback= cluster_centroid_callback,
+        """, data = data, options = options, data_label_callback = data_label_callback,
              done_callback =done_callback)
         with ui_events() as poll:
             while self.train_done is False:

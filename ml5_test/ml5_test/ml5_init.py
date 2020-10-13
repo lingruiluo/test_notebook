@@ -18,7 +18,8 @@ def load_requirements(widget=None, silent=True, additional=()):
     # Make sure jQuery and jQueryUI are loaded.
     widget.check_jquery()
     # load additional jQuery plugin code.
-    ml5_js = ["https://unpkg.com/ml5@0.5.0/dist/ml5.min.js"]
+    ml5_js = ["https://unpkg.com/ml5@0.5.0/dist/ml5.js",
+              "https://cdn.jsdelivr.net/npm/p5@1.1.9/lib/p5.js"]
     widget.load_js_files(ml5_js)
     if not silent:
         widget.element.html("<div>Requirements for <b>chart_ipynb</b> have been loaded.</div>")
@@ -46,7 +47,6 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
             'outputs': [],
             'dataUrl': None,
             'modelUrl': None,
-            'layers': [],
             'task': None,
             'debug': False,
             'learningRate': 0.2,
@@ -72,6 +72,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
     def add_data(self, inputs, outputs):
         self.js_init("""
             element.nn_info.network.addData(inputs, outputs);
+
             //console.log(element.nn_info.network.data.data);
         """, inputs = inputs, outputs = outputs)
 
@@ -79,7 +80,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
     def normalize_data(self):
         self.js_init("""
             element.nn_info.network.normalizeData();
-            console.log(element.nn_info.network.data.data);
+            //console.log(element.nn_info.network.data.data);
         """)
 
     def train_data(self, trainingOptions=None):
