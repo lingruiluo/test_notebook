@@ -29,6 +29,7 @@ class imageClassifier(ml5_init.ML5Class):
                 console.log('Model Ready!');
                 model_ready()
             }
+            element.predict_images = [];
         """,model = model,model_ready=model_ready)
         with ui_events() as poll:
             while self.model_load is False:
@@ -59,11 +60,11 @@ class imageClassifier(ml5_init.ML5Class):
                     callback(result);
                     done_callback();
                 }
-                var img = document.createElement("img");
-                img.src = src;
-                img.width = width;
-                img.height = height;
-                element.nn_info.network.classify(img, num_of_class, handleResults);
+                var imageData = new Image(width, height)
+                imageData.src = src;
+                //console.log(imageData);
+                element.predict_images.push(imageData);
+                element.nn_info.network.classify(element.predict_images[element.predict_images.length - 1], num_of_class, handleResults);
 
             """, src=image, width=width, height=height,
                 num_of_class = num_of_class,

@@ -71,6 +71,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
 
     def add_data(self, inputs, outputs):
         self.js_init("""
+            //debugger;
             element.nn_info.network.addData(inputs, outputs);
 
             //console.log(element.nn_info.network.data.data);
@@ -97,6 +98,7 @@ class ML5Class(jp_proxy_widget.JSProxyWidget):
                 console.log('done!');
                 done_callback();
             }
+            //debugger;
             element.nn_info.network.train(trainingOptions,whileTraining, doneTraining);
 
 
